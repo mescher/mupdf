@@ -91,6 +91,7 @@ static void drawpage(xps_context *ctx, int pagenum)
 	fz_device *dev;
 	int start;
 	int code;
+	int merge;
 
 	if (showtime)
 	{
@@ -133,10 +134,13 @@ static void drawpage(xps_context *ctx, int pagenum)
 			xps_run_page(ctx, page, dev, fz_identity);
 		fz_free_device(dev);
 		printf("[Page %d]\n", pagenum);
-		if (showtext > 1)
-			fz_debug_text_span_xml(text);
-		else
+		if (showtext > 1) {
+			merge = 0;
+			fz_debug_text_span_xml(text, merge);
+		}
+		else{
 			fz_debug_text_span(text);
+		}
 		printf("\n");
 		fz_free_text_span(text);
 	}

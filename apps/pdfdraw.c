@@ -44,23 +44,23 @@ static void die(fz_error error)
 static void usage(void)
 {
 	fprintf(stderr,
-		"usage: pdfdraw [options] input.pdf [pages]\n"
+		"usage: generate [options] input.pdf [pages]\n"
 		"\t-o -\toutput filename (%%d for page number)\n"
-		"\t\tsupported formats: pgm, ppm, pam, png, pbm\n"
+		// "\t\tsupported formats: pgm, ppm, pam, png, pbm\n"
 		"\t-p -\tpassword\n"
 		"\t-r -\tresolution in dpi (default: 72)\n"
-		"\t-A\tdisable accelerated functions\n"
+		// "\t-A\tdisable accelerated functions\n"
 		"\t-a\tsave alpha channel (only pam and png)\n"
 		"\t-b -\tnumber of bits of antialiasing (0 to 8)\n"
 		"\t-g\trender in grayscale\n"
-		"\t-m\tshow timing information\n"
-		"\t-t\tshow text (-tt for xml)\n"
-		"\t-x\tshow display list\n"
-		"\t-d\tdisable use of display list\n"
-		"\t-5\tshow md5 checksums\n"
+		// "\t-m\tshow timing information\n"
+		"\t-t\tshow text (-tt for xml -ttt for xml with merged chars)\n"
+		// "\t-x\tshow display list\n"
+		// "\t-d\tdisable use of display list\n"
+		// "\t-5\tshow md5 checksums\n"
 		"\t-R -\trotate clockwise by given number of degrees\n"
 		"\t-G gamma\tgamma correct output\n"
-		"\t-I\tinvert output\n"
+		// "\t-I\tinvert output\n"
 		"\tpages\tcomma separated list of ranges\n");
 	exit(1);
 }
@@ -96,7 +96,7 @@ static void drawpage(pdf_xref *xref, int pagenum)
 	pdf_page *page;
 	fz_display_list *list;
 	fz_device *dev;
-	int start;
+	int start, merge;
 
 	if (showtime)
 	{
@@ -140,11 +140,19 @@ static void drawpage(pdf_xref *xref, int pagenum)
 		else
 			pdf_run_page(xref, page, dev, fz_identity);
 		fz_free_device(dev);
-		printf("[Page %d]\n", pagenum);
-		if (showtext > 1)
-			fz_debug_text_span_xml(text);
-		else
+		if (showtext > 1) {
+			merge = 0;
+			if ( showtext > 2 ) {
+				merge = 1;
+			}
+			printf("<page number=\"%d\">\n", pagenum);
+			fz_debug_text_span_xml(text, merge);
+			printf("</page>\n");
+		}
+		else{
+			printf("[Page %d]\n", pagenum);
 			fz_debug_text_span(text);
+		}
 		printf("\n");
 		fz_free_text_span(text);
 	}
@@ -304,7 +312,7 @@ int main(int argc, char **argv)
 	fz_error error;
 	int c;
 
-	while ((c = fz_getopt(argc, argv, "o:p:r:R:Aab:dgmtx5G:I")) != -1)
+	while ((c = fz_getopt(argc, argv, "o:p:r:j:R:Aab:dgmtx5G:I")) != -1)
 	{
 		switch (c)
 		{
@@ -360,7 +368,7 @@ int main(int argc, char **argv)
 	timing.minpage = 0;
 	timing.maxpage = 0;
 
-	if (showxml)
+	if (showxml || showtext > 1)
 		printf("<?xml version=\"1.0\"?>\n");
 
 	while (fz_optind < argc)
@@ -375,7 +383,7 @@ int main(int argc, char **argv)
 		if (error)
 			die(fz_rethrow(error, "cannot load page tree: %s", filename));
 
-		if (showxml)
+		if (showxml || showtext > 1)
 			printf("<document name=\"%s\">\n", filename);
 
 		if (fz_optind == argc || !isrange(argv[fz_optind]))
@@ -383,7 +391,7 @@ int main(int argc, char **argv)
 		if (fz_optind < argc && isrange(argv[fz_optind]))
 			drawrange(xref, argv[fz_optind++]);
 
-		if (showxml)
+		if (showxml || showtext > 1)
 			printf("</document>\n");
 
 		pdf_free_xref(xref);

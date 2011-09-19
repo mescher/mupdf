@@ -149,37 +149,64 @@ fz_add_text_newline(fz_text_span **last, fz_font *font, float size, int wmode)
 }
 
 void
-fz_debug_text_span_xml(fz_text_span *span)
+fz_debug_text_span_xml(fz_text_span *span, int merge)
 {
 	char buf[10];
 	int c, n, k, i;
 
-	printf("<span font=\"%s\" size=\"%g\" wmode=\"%d\" eol=\"%d\">\n",
-		span->font ? span->font->name : "NULL", span->size, span->wmode, span->eol);
+	printf("\t<span font=\"%s\" size=\"%g\">\n",
+		span->font ? span->font->name : "NULL", span->size);
 
-	for (i = 0; i < span->len; i++)
-	{
-		printf("\t<char ucs=\"");
-		c = span->text[i].c;
-		if (c < 128)
-			putchar(c);
-		else
+	if( merge > 0 ) {
+		for (i = 0; i < span->len; i++)
 		{
-			n = runetochar(buf, &c);
-			for (k = 0; k < n; k++)
-				putchar(buf[k]);
+			if ( i == 0 ){
+				printf("\t<chars x0=\"%d\" y0=\"%d\" x1=\"%d\" y1=\"%d\"><![CDATA[",
+					span->text[i].bbox.x0,
+					span->text[i].bbox.y0,
+					span->text[i].bbox.x1,
+					span->text[i].bbox.y1);
+			}
+
+			c = span->text[i].c;
+			if (c < 128)
+				putchar(c);
+			else
+			{
+				n = runetochar(buf, &c);
+				for (k = 0; k < n; k++)
+					putchar(buf[k]);
+			}
+			if ( (i + 1) == span->len ) {
+				printf("]]></chars>\n");
+			}
 		}
-		printf("\" bbox=\"%d %d %d %d\" />\n",
-			span->text[i].bbox.x0,
-			span->text[i].bbox.y0,
-			span->text[i].bbox.x1,
-			span->text[i].bbox.y1);
+	}
+	else {
+		for (i = 0; i < span->len; i++)
+		{
+			printf("\t<char ucs=\"");
+			c = span->text[i].c;
+			if (c < 128)
+				putchar(c);
+			else
+			{
+				n = runetochar(buf, &c);
+				for (k = 0; k < n; k++)
+					putchar(buf[k]);
+			}
+			printf("\" bbox=\"%d %d %d %d\" />\n",
+				span->text[i].bbox.x0,
+				span->text[i].bbox.y0,
+				span->text[i].bbox.x1,
+				span->text[i].bbox.y1);
+		}
 	}
 
-	printf("</span>\n");
+	printf("\t</span>\n");
 
 	if (span->next)
-		fz_debug_text_span_xml(span->next);
+		fz_debug_text_span_xml(span->next, merge);
 }
 
 void
