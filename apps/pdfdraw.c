@@ -19,6 +19,7 @@ int showxml = 0;
 int showtext = 0;
 int showtime = 0;
 int showmd5 = 0;
+int showpages = 0;
 int savealpha = 0;
 int uselist = 1;
 int alphabits = 8;
@@ -58,6 +59,7 @@ static void usage(void)
 		// "\t-x\tshow display list\n"
 		// "\t-d\tdisable use of display list\n"
 		// "\t-5\tshow md5 checksums\n"
+		"\t-n\t show the number of pages\n"
 		"\t-R -\trotate clockwise by given number of degrees\n"
 		"\t-G gamma\tgamma correct output\n"
 		// "\t-I\tinvert output\n"
@@ -266,6 +268,12 @@ static void drawpage(pdf_xref *xref, int pagenum)
 	fz_flush_warnings();
 }
 
+static void countpages(pdf_xref *xref) {
+	int spage;
+	spage = pdf_count_pages(xref);
+	printf("%d", spage);
+}
+
 static void drawrange(pdf_xref *xref, char *range)
 {
 	int page, spage, epage;
@@ -312,7 +320,7 @@ int main(int argc, char **argv)
 	fz_error error;
 	int c;
 
-	while ((c = fz_getopt(argc, argv, "o:p:r:j:R:Aab:dgmtx5G:I")) != -1)
+	while ((c = fz_getopt(argc, argv, "o:p:r:j:R:Aab:dgmtxn5G:I")) != -1)
 	{
 		switch (c)
 		{
@@ -326,6 +334,7 @@ int main(int argc, char **argv)
 		case 'm': showtime++; break;
 		case 't': showtext++; break;
 		case 'x': showxml++; break;
+		case 'n': showpages++; break;
 		case '5': showmd5++; break;
 		case 'g': grayscale++; break;
 		case 'd': uselist = 0; break;
@@ -340,9 +349,24 @@ int main(int argc, char **argv)
 	if (fz_optind == argc)
 		usage();
 
-	if (!showtext && !showxml && !showtime && !showmd5 && !output)
+	if (!showpages && !showtext && !showxml && !showtime && !showmd5 && !output)
 	{
 		printf("nothing to do\n");
+		exit(0);
+	}
+
+	if(showpages) {
+		filename = argv[fz_optind++];
+		error = pdf_open_xref(&xref, filename, password);
+		if (error) {
+			die(fz_rethrow(error, "cannot open document: %s", filename));
+		}
+		error = pdf_load_page_tree(xref);
+		if (error) {
+			die(fz_rethrow(error, "cannot load page tree: %s", filename));
+		}
+		countpages(xref);
+		pdf_free_xref(xref);
 		exit(0);
 	}
 
@@ -368,7 +392,7 @@ int main(int argc, char **argv)
 	timing.minpage = 0;
 	timing.maxpage = 0;
 
-	if (showxml || showtext > 1)
+	if ((showxml || showtext > 1) && !showpages)
 		printf("<?xml version=\"1.0\"?>\n");
 
 	while (fz_optind < argc)
@@ -383,7 +407,7 @@ int main(int argc, char **argv)
 		if (error)
 			die(fz_rethrow(error, "cannot load page tree: %s", filename));
 
-		if (showxml || showtext > 1)
+		if ((showxml || showtext > 1) && !showpages)
 			printf("<document name=\"%s\">\n", filename);
 
 		if (fz_optind == argc || !isrange(argv[fz_optind]))
@@ -397,7 +421,7 @@ int main(int argc, char **argv)
 		pdf_free_xref(xref);
 	}
 
-	if (showtime)
+	if (showtime && !showpages)
 	{
 		printf("total %dms / %d pages for an average of %dms\n",
 			timing.total, timing.count, timing.total / timing.count);
