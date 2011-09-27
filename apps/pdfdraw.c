@@ -17,6 +17,8 @@ float rotation = 0;
 
 int showxml = 0;
 int showtext = 0;
+int showhtml = 0;
+int showjson = 0;
 int showtime = 0;
 int showmd5 = 0;
 int showpages = 0;
@@ -56,6 +58,8 @@ static void usage(void)
 		"\t-g\trender in grayscale\n"
 		// "\t-m\tshow timing information\n"
 		"\t-t\tshow text (-tt for xml -ttt for xml with merged chars)\n"
+		"\t-h \tshow html\n"
+		"\t-J \toutput in JSON format\n"
 		// "\t-x\tshow display list\n"
 		// "\t-d\tdisable use of display list\n"
 		// "\t-5\tshow md5 checksums\n"
@@ -92,7 +96,7 @@ static int isrange(char *s)
 	return 1;
 }
 
-static void drawpage(pdf_xref *xref, int pagenum)
+void drawpage(pdf_xref *xref, int pagenum)
 {
 	fz_error error;
 	pdf_page *page;
@@ -148,6 +152,7 @@ static void drawpage(pdf_xref *xref, int pagenum)
 				merge = 1;
 			}
 			printf("<page number=\"%d\">\n", pagenum);
+			printf("<mediabox x0=\"%f\" y0=\"%f\" x1=\"%f\" y1=\"%f\" \\>\n", page->mediabox.x0,page->mediabox.y0,page->mediabox.x1,page->mediabox.y1);
 			fz_debug_text_span_xml(text, merge);
 			printf("</page>\n");
 		}
@@ -156,6 +161,39 @@ static void drawpage(pdf_xref *xref, int pagenum)
 			fz_debug_text_span(text);
 		}
 		printf("\n");
+		fz_free_text_span(text);
+	}
+
+	if (showhtml) {
+		fz_text_span *text = fz_new_text_span();
+		dev = fz_new_text_device(text);
+		if (list)
+			fz_execute_display_list(list, dev, fz_identity, fz_infinite_bbox);
+		else
+			pdf_run_page(xref, page, dev, fz_identity);
+
+		fz_free_device(dev);
+		printf("<div id=page_%d style=\"position:absolute; top:0px; left:0px; \">\n", pagenum);
+		printf("<img src=\"img%d.png\" \\>\n",pagenum);
+		fz_debug_text_span_html(text, &page->mediabox);
+		printf("</div>\n");
+		printf("\n");
+		fz_free_text_span(text);
+	
+	}
+
+	if (showjson) {
+		fz_text_span *text = fz_new_text_span();
+		dev = fz_new_text_device(text);
+		if (list)
+			fz_execute_display_list(list, dev, fz_identity, fz_infinite_bbox);
+		else
+			pdf_run_page(xref, page, dev, fz_identity);
+
+		fz_free_device(dev);
+		printf("[");
+		fz_debug_text_span_json(text, &page->mediabox);
+		printf("]\n");
 		fz_free_text_span(text);
 	}
 
@@ -266,6 +304,7 @@ static void drawpage(pdf_xref *xref, int pagenum)
 	pdf_age_store(xref->store, 3);
 
 	fz_flush_warnings();
+
 }
 
 static void countpages(pdf_xref *xref) {
@@ -278,6 +317,7 @@ static void drawrange(pdf_xref *xref, char *range)
 {
 	int page, spage, epage;
 	char *spec, *dash;
+	int absolute_top=0;
 
 	spec = fz_strsep(&range, ",");
 	while (spec)
@@ -320,7 +360,7 @@ int main(int argc, char **argv)
 	fz_error error;
 	int c;
 
-	while ((c = fz_getopt(argc, argv, "o:p:r:j:R:Aab:dgmtxn5G:I")) != -1)
+	while ((c = fz_getopt(argc, argv, "o:p:r:j:R:Aab:dgmthJxn5G:I")) != -1)
 	{
 		switch (c)
 		{
@@ -333,6 +373,8 @@ int main(int argc, char **argv)
 		case 'b': alphabits = atoi(fz_optarg); break;
 		case 'm': showtime++; break;
 		case 't': showtext++; break;
+		case 'h': showhtml++; break;
+		case 'J': showjson++; break;
 		case 'x': showxml++; break;
 		case 'n': showpages++; break;
 		case '5': showmd5++; break;
@@ -349,7 +391,7 @@ int main(int argc, char **argv)
 	if (fz_optind == argc)
 		usage();
 
-	if (!showpages && !showtext && !showxml && !showtime && !showmd5 && !output)
+	if (!showpages && !showtext && !showxml && !showhtml && !showjson && !showtime && !showmd5 && !output)
 	{
 		printf("nothing to do\n");
 		exit(0);
@@ -394,7 +436,6 @@ int main(int argc, char **argv)
 
 	if ((showxml || showtext > 1) && !showpages)
 		printf("<?xml version=\"1.0\"?>\n");
-
 	while (fz_optind < argc)
 	{
 		filename = argv[fz_optind++];
@@ -409,6 +450,8 @@ int main(int argc, char **argv)
 
 		if ((showxml || showtext > 1) && !showpages)
 			printf("<document name=\"%s\">\n", filename);
+		if (showhtml)
+			printf("<html>\n<head>\n<title>%s</title>\n</head>\n<body>",filename);
 
 		if (fz_optind == argc || !isrange(argv[fz_optind]))
 			drawrange(xref, "1-");
@@ -417,6 +460,8 @@ int main(int argc, char **argv)
 
 		if (showxml || showtext > 1)
 			printf("</document>\n");
+		if (showhtml)
+			printf("</body></html>",filename);
 
 		pdf_free_xref(xref);
 	}
