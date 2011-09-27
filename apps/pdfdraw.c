@@ -175,7 +175,7 @@ void drawpage(pdf_xref *xref, int pagenum)
 		fz_free_device(dev);
 		printf("<div id=page_%d style=\"position:absolute; top:0px; left:0px; \">\n", pagenum);
 		printf("<img src=\"img%d.png\" \\>\n",pagenum);
-		fz_debug_text_span_html(text, &page->mediabox);
+		fz_debug_text_span_html(text, &page->mediabox,NULL);
 		printf("</div>\n");
 		printf("\n");
 		fz_free_text_span(text);

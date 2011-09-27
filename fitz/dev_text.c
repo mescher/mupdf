@@ -1,5 +1,4 @@
 #include "fitz.h"
-#include <stdio.h>
 
 #define LINE_DIST 0.9f
 #define SPACE_DIST 0.2f
@@ -211,13 +210,30 @@ fz_debug_text_span_xml(fz_text_span *span, int merge)
 }
 
 void
-fz_debug_text_span_html(fz_text_span *span, fz_rect *mediabox)
+fz_debug_text_span_html(fz_text_span *span, fz_rect *mediabox, fz_text_span *prev_span)
 {
 	char buf[10];
 	int c, n, k, i;
 	int is_word_open=0; 
+
+	int last_char=0;
 	
 	int page_height= (int)(mediabox->y1 - mediabox->y0);
+
+
+	
+	//if the first_parag is not defined, init with the current
+	if (! prev_span) {
+		prev_span=span;
+		printf("\t<span id=parag >\n");
+	} else {
+		if (span->len>1) {
+		} else {
+		}
+	}
+
+	//check if current first wo
+
 	for (i = 0; i < span->len; i++)
 	{
 		c = span->text[i].c;
@@ -229,13 +245,15 @@ fz_debug_text_span_html(fz_text_span *span, fz_rect *mediabox)
 		} else {
 			if (!is_word_open) {
 				is_word_open=1;
-				printf("\t<span id=word  style=\"position:absolute; top:%dpx; left:%dpx; font-size:%gpx; background-color:555555; opacity:0.3; \">", 
+				printf("\t\t<span id=word  style=\"position:absolute; top:%dpx; left:%dpx; font-size:%gpx; background-color:555555; opacity:0.3; \">", 
 					(int)(page_height-span->text[i].bbox.y0-span->size - span->size/5.0 ),
 					(int)span->text[i].bbox.x0,
 					span->size);
 			}
-			if (c < 128)
+			if (c < 128) {
 				putchar(c);
+				last_char=c;
+			}
 			else
 			{
 				n = runetochar(buf, &c);
@@ -250,7 +268,28 @@ fz_debug_text_span_html(fz_text_span *span, fz_rect *mediabox)
 		}
 	}
 	if (span->next) {
-		fz_debug_text_span_html(span->next, mediabox);
+		//check for end of paragraph
+		float maxSize = MAX(span->size, span->next->size);
+		int dx0 = ABS(span->next->text[0].bbox.x0 - prev_span->text[0].bbox.x0);
+		int dx1 = ABS(span->next->text[0].bbox.x0 - span->text[span->len-1].bbox.x1);
+		int dy = ABS(span->next->text[0].bbox.y0 - span->text[0].bbox.y0);
+		
+		int is_same_line = (dy<0.3* maxSize && dx1<0.3*maxSize);
+		int is_same_start = dx0<0.5*span->size;
+		int is_next_line = dy<maxSize*2;
+
+		int is_same_font = span->font == span->next->font;
+		int is_same_size = span->size == span->next->size;
+		int is_no_termination_char = last_char!=33 && last_char!=46;
+
+		if (is_same_line || (is_same_start && is_next_line  && is_same_font && is_same_size && is_no_termination_char)) {
+			fz_debug_text_span_html(span->next, mediabox, prev_span);
+		} else {
+			printf("\t</span data='%d %d %d %d %d %d'>\n",is_same_line,is_same_start, is_next_line, is_same_font, is_same_size, is_no_termination_char);
+			fz_debug_text_span_html(span->next, mediabox, NULL);
+		}
+	} else if (prev_span) {
+		printf("\t</span>\n");
 	}
 }
 
