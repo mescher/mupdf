@@ -1,4 +1,5 @@
 #include "fitz.h"
+#include <stdio.h>
 
 #define LINE_DIST 0.9f
 #define SPACE_DIST 0.2f
@@ -207,6 +208,109 @@ fz_debug_text_span_xml(fz_text_span *span, int merge)
 
 	if (span->next)
 		fz_debug_text_span_xml(span->next, merge);
+}
+
+void
+fz_debug_text_span_html(fz_text_span *span, fz_rect *mediabox)
+{
+	char buf[10];
+	int c, n, k, i;
+	int is_word_open=0; 
+	
+	int page_height= (int)(mediabox->y1 - mediabox->y0);
+	for (i = 0; i < span->len; i++)
+	{
+		c = span->text[i].c;
+		if (c==32) {
+			if (is_word_open) {
+				is_word_open=0;
+				printf(" </span>\n");
+			}
+		} else {
+			if (!is_word_open) {
+				is_word_open=1;
+				printf("\t<span id=word  style=\"position:absolute; top:%dpx; left:%dpx; font-size:%gpx; background-color:555555; opacity:0.3; \">", 
+					(int)(page_height-span->text[i].bbox.y0-span->size - span->size/5.0 ),
+					(int)span->text[i].bbox.x0,
+					span->size);
+			}
+			if (c < 128)
+				putchar(c);
+			else
+			{
+				n = runetochar(buf, &c);
+				for (k = 0; k < n; k++)
+					putchar(buf[k]);
+			}
+		}
+		if ( (i + 1) == span->len ) {
+			if (is_word_open) {
+				printf("</span>\n");
+			}
+		}
+	}
+	if (span->next) {
+		fz_debug_text_span_html(span->next, mediabox);
+	}
+}
+
+
+
+/**
+* Exports a json with all the words with top/left/size infos
+* in the format [{'word': 'Hello', 'top': 34, 'left': 70, 'size': 21}, {'word': 'Hello', 'top': 34, 'left': 70, 'size': 21}...]
+*/
+void
+fz_debug_text_span_json(fz_text_span *span, fz_rect *mediabox)
+{
+	char buf[10];
+	int c, n, k, i;
+	int is_word_open=0; 
+	int is_first_word=1; 
+	
+	int page_height= (int)(mediabox->y1 - mediabox->y0);
+	for (i = 0; i < span->len; i++)
+	{
+		c = span->text[i].c;
+		if (c==32) {
+			if (is_word_open) {
+				is_word_open=0;
+				printf("'}");
+			}
+		} else {
+			if (!is_word_open) {
+				is_word_open=1;
+				if (!is_first_word) {
+					printf(",");
+				}
+				is_first_word=0;
+				printf("{'top':%d, 'left':%d, 'size':%g, 'word':'", 
+					(int)(page_height-span->text[i].bbox.y0-span->size - span->size/5.0 ),
+					(int)span->text[i].bbox.x0,
+					span->size);
+			}
+			if (c < 128) {
+				//if char is a ' add a \ before
+				if (c==39) 
+					putchar(134);
+				putchar(c);
+			}
+			else
+			{
+				n = runetochar(buf, &c);
+				for (k = 0; k < n; k++)
+					putchar(buf[k]);
+			}
+		}
+		if ( (i + 1) == span->len ) {
+			if (is_word_open) {
+				printf("'}");
+			}
+		}
+	}
+	if (span->next) {
+		fz_debug_text_span_json(span->next, mediabox);
+	}
 }
 
 void

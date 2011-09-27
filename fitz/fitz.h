@@ -1049,6 +1049,8 @@ fz_text_span *fz_new_text_span(void);
 void fz_free_text_span(fz_text_span *line);
 void fz_debug_text_span(fz_text_span *line);
 void fz_debug_text_span_xml(fz_text_span *span, int merge);
+void fz_debug_text_span_html(fz_text_span *span, fz_rect *mediabox);
+void fz_debug_text_span_json(fz_text_span *span, fz_rect *mediabox);
 
 fz_device *fz_new_text_device(fz_text_span *text);
 
