@@ -306,7 +306,7 @@ fz_debug_text_span_json(fz_text_span *span, fz_rect *mediabox, fz_text_span *pre
 	//if the first_parag is not defined, init with the current
 	if (! prev_span) {
 		prev_span=span;
-		printf("\t\t{'word':\n"); 
+		printf("\t\t{\"words\":\n");
 		printf("\t\t\t[\n");
 		is_first_word=1;
 	} 
@@ -316,10 +316,10 @@ fz_debug_text_span_json(fz_text_span *span, fz_rect *mediabox, fz_text_span *pre
 	for (i = 0; i < span->len; i++)
 	{
 		c = span->text[i].c;
-		if (c==32) {
+		if (c == 32) {
 			if (is_word_open) {
 				is_word_open=0;
-				printf("'}");
+				printf("\"}");
 			}
 		} else {
 			if (!is_word_open) {
@@ -328,7 +328,7 @@ fz_debug_text_span_json(fz_text_span *span, fz_rect *mediabox, fz_text_span *pre
 					printf(",\n");
 				}
 				is_first_word=0;
-				printf("\t\t\t\t{'top':%d, 'left':%d, 'size':%g, 'font':'%s' 'word':'", 
+				printf("\t\t\t\t{\"top\": %d, \"left\": %d, \"size\": %g, \"font\": \"%s\", \"word\":\"",
 					(int)(page_height-span->text[i].bbox.y0-span->size - span->size/5.0 ),
 					(int)span->text[i].bbox.x0,
 					span->size,
@@ -336,9 +336,9 @@ fz_debug_text_span_json(fz_text_span *span, fz_rect *mediabox, fz_text_span *pre
 					);
 			}
 			if (c < 128) {
-				//if char is a ' add a \ before
-				if (c==39) 
-					putchar(134);
+				//if char is a " or a \ add a \ before
+				if (c == 39 || c == 92)
+					putchar(92);
 				putchar(c);
 				last_char=c;
 			}
@@ -351,7 +351,7 @@ fz_debug_text_span_json(fz_text_span *span, fz_rect *mediabox, fz_text_span *pre
 		}
 		if ( (i + 1) == span->len ) {
 			if (is_word_open) {
-				printf("'}");
+				printf("\"}");
 			}
 		}
 	}
