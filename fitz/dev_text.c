@@ -338,7 +338,7 @@ fz_debug_text_span_json(fz_text_span *span, fz_rect *mediabox, fz_text_span *pre
 			if (c < 128) {
 				//if char is a ' add a \ before
 				if (c==39) 
-					putchar(134);
+					putchar(92);
 				putchar(c);
 				last_char=c;
 			}
