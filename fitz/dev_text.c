@@ -210,7 +210,7 @@ fz_debug_text_span_xml(fz_text_span *span, int merge)
 }
 
 void
-fz_debug_text_span_html(fz_text_span *span, fz_rect *mediabox, fz_text_span *prev_span)
+fz_debug_text_span_html(float zoom, fz_text_span *span, fz_rect *mediabox, fz_text_span *prev_span)
 {
 	char buf[10];
 	int c, n, k, i;
@@ -242,9 +242,9 @@ fz_debug_text_span_html(fz_text_span *span, fz_rect *mediabox, fz_text_span *pre
 			if (!is_word_open) {
 				is_word_open=1;
 				printf("\t\t<span id=word  style=\"position:absolute; top:%dpx; left:%dpx; font-size:%gpx; background-color:555555; opacity:0.3; \">", 
-					(int)(page_height-span->text[i].bbox.y0-span->size - span->size/5.0 ),
-					(int)span->text[i].bbox.x0,
-					span->size);
+					(int)((page_height-span->text[i].bbox.y0-span->size - span->size/5.0 )* zoom),
+					(int)(span->text[i].bbox.x0*zoom),
+					span->size*zoom);
 			}
 			if (c < 128) {
 				putchar(c);
@@ -279,10 +279,10 @@ fz_debug_text_span_html(fz_text_span *span, fz_rect *mediabox, fz_text_span *pre
 		int is_no_termination_char = last_char!=33 && last_char!=46;
 
 		if (is_same_line || (is_same_start && is_next_line  && is_same_font && is_same_size && is_no_termination_char)) {
-			fz_debug_text_span_html(span->next, mediabox, prev_span);
+			fz_debug_text_span_html(zoom, span->next, mediabox, prev_span);
 		} else {
 			printf("\t</div>\n");
-			fz_debug_text_span_html(span->next, mediabox, NULL);
+			fz_debug_text_span_html(zoom, span->next, mediabox, NULL);
 		}
 	} else if (prev_span) {
 		printf("\t</div>\n");
@@ -290,7 +290,7 @@ fz_debug_text_span_html(fz_text_span *span, fz_rect *mediabox, fz_text_span *pre
 }
 
 void
-fz_debug_text_span_json(fz_text_span *span, fz_rect *mediabox, fz_text_span *prev_span)
+fz_debug_text_span_json(float zoom, fz_text_span *span, fz_rect *mediabox, fz_text_span *prev_span)
 {
 	char buf[10];
 	int c, n, k, i;
@@ -329,9 +329,9 @@ fz_debug_text_span_json(fz_text_span *span, fz_rect *mediabox, fz_text_span *pre
 				}
 				is_first_word=0;
 				printf("\t\t\t\t{\"top\": %d, \"left\": %d, \"size\": %g, \"font\": \"%s\", \"word\":\"",
-					(int)(page_height-span->text[i].bbox.y0-span->size - span->size/5.0 ),
-					(int)span->text[i].bbox.x0,
-					span->size,
+					(int)((page_height-span->text[i].bbox.y0-span->size - span->size/5.0 ) * zoom),
+					(int)(span->text[i].bbox.x0 * zoom),
+					span->size * zoom,
 					span->font ? span->font->name : "NULL"
 					);
 			}
@@ -371,11 +371,11 @@ fz_debug_text_span_json(fz_text_span *span, fz_rect *mediabox, fz_text_span *pre
 		int is_no_termination_char = last_char!=33 && last_char!=46;
 
 		if (is_same_line || (is_same_start && is_next_line  && is_same_font && is_same_size && is_no_termination_char)) {
-			fz_debug_text_span_json(span->next, mediabox, prev_span);
+			fz_debug_text_span_json(zoom, span->next, mediabox, prev_span);
 		} else {
 			printf("\n\t\t\t]\n");
 			printf("\t\t},\n"); 
-			fz_debug_text_span_json(span->next, mediabox, NULL);
+			fz_debug_text_span_json(zoom, span->next, mediabox, NULL);
 		}
 	} else if (prev_span) {
 		printf("\n\t\t\t]\n");
