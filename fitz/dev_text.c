@@ -213,7 +213,7 @@ void
 fz_debug_text_span_html(float zoom, fz_text_span *span, fz_rect *mediabox, fz_text_span *prev_span)
 {
 	char buf[10];
-	int c, n, k, i;
+	int c, n, k, i, j;
 	int is_word_open=0; 
 
 	int last_char=0;
@@ -228,21 +228,28 @@ fz_debug_text_span_html(float zoom, fz_text_span *span, fz_rect *mediabox, fz_te
 		printf("\t<div id=parag >\n");
 	} 
 
-	//check if current first wo
-
+	//check if current first word
 	for (i = 0; i < span->len; i++)
 	{
 		c = span->text[i].c;
-		if (c==32) {
+		if (c == 32) {
 			if (is_word_open) {
 				is_word_open=0;
-				printf(" </span>\n");
+				printf("</span>\n");
 			}
 		} else {
 			if (!is_word_open) {
 				is_word_open=1;
-				printf("\t\t<span id=word  style=\"position:absolute; top:%dpx; left:%dpx; font-size:%gpx; background-color:555555; opacity:0.3; \">", 
-					(int)((page_height-span->text[i].bbox.y0-span->size - span->size/5.0 )* zoom),
+                                // Get last char
+                                j=i;
+                                do{
+                                    j++;
+                                }while(span->text[j].c != 32 && j < span->len);
+
+				printf("\t\t<span class=\"word\"  style=\"width:%dpx;height:%dpx;position:absolute; top:%dpx; left:%dpx; font-size:%gpx; background-color:555555; opacity:0.3; \">",
+                                        (int) ((span->text[j - 1].bbox.x1 - span->text[i].bbox.x0) * zoom),
+                                        (int) ((span->text[j - 1].bbox.y1 - span->text[i].bbox.y0) * zoom),
+                                        (int)((page_height-span->text[i].bbox.y0-span->size - span->size/5.0 )* zoom),
 					(int)(span->text[i].bbox.x0*zoom),
 					span->size*zoom);
 			}
@@ -293,7 +300,7 @@ void
 fz_debug_text_span_json(float zoom, fz_text_span *span, fz_rect *mediabox, fz_text_span *prev_span)
 {
 	char buf[10];
-	int c, n, k, i;
+	int c, n, k, i, j;
 	int is_word_open=0; 
 	int is_first_word=0; 
 
@@ -304,17 +311,20 @@ fz_debug_text_span_json(float zoom, fz_text_span *span, fz_rect *mediabox, fz_te
 
 	
 	//if the first_parag is not defined, init with the current
-	if (! prev_span) {
+	if (!prev_span) {
 		prev_span=span;
 		printf("\t\t{\"words\":\n");
 		printf("\t\t\t[\n");
 		is_first_word=1;
-	} 
+	}
 
 	//check if current first wo
 
 	for (i = 0; i < span->len; i++)
 	{
+                if((prev_span && prev_span->text[0].c == 32) && span->text[0].c == 32) {
+                    continue;
+                }
 		c = span->text[i].c;
 		if (c == 32) {
 			if (is_word_open) {
@@ -328,16 +338,22 @@ fz_debug_text_span_json(float zoom, fz_text_span *span, fz_rect *mediabox, fz_te
 					printf(",\n");
 				}
 				is_first_word=0;
-				printf("\t\t\t\t{\"top\": %d, \"left\": %d, \"size\": %g, \"font\": \"%s\", \"word\":\"",
-					(int)((page_height-span->text[i].bbox.y0-span->size - span->size/5.0 ) * zoom),
+                                j=i;
+                                do{
+                                    j++;
+                                }while(span->text[j].c != 32 && j < span->len);
+				printf("\t\t\t\t{\"w\": %d, \"h\": %d, \"top\": %d, \"left\": %d, \"size\": %g, \"font\": \"%s\", \"word\":\"",
+					(int) ((span->text[j - 1].bbox.x1 - span->text[i].bbox.x0) * zoom),
+                                        (int) ((span->text[j - 1].bbox.y1 - span->text[i].bbox.y0) * zoom),
+                                        (int)((page_height-span->text[i].bbox.y0-span->size - span->size/5.0 ) * zoom),
 					(int)(span->text[i].bbox.x0 * zoom),
 					span->size * zoom,
 					span->font ? span->font->name : "NULL"
-					);
+				);
 			}
 			if (c < 128) {
 				//if char is a " or a \ add a \ before
-				if (c == 39 || c == 92)
+				if (c == 34 || c == 92)
 					putchar(92);
 				putchar(c);
 				last_char=c;
@@ -355,14 +371,16 @@ fz_debug_text_span_json(float zoom, fz_text_span *span, fz_rect *mediabox, fz_te
 			}
 		}
 	}
-	if (span->next) {
+        
+        
+	if (span->next && (prev_span && prev_span->text[0].c != 32 && span->next->text[0].c != 32)) {
 		//check for end of paragraph
 		float maxSize = MAX(span->size, span->next->size);
 		int dx0 = ABS(span->next->text[0].bbox.x0 - prev_span->text[0].bbox.x0);
 		int dx1 = ABS(span->next->text[0].bbox.x0 - span->text[span->len-1].bbox.x1);
 		int dy = ABS(span->next->text[0].bbox.y0 - span->text[0].bbox.y0);
 		
-		int is_same_line = (dy<0.3* maxSize && dx1<0.3*maxSize);
+		int is_same_line = (dy<0.3*maxSize && dx1<0.3*maxSize);
 		int is_same_start = dx0<0.5*span->size;
 		int is_next_line = dy<maxSize*2;
 
@@ -374,7 +392,7 @@ fz_debug_text_span_json(float zoom, fz_text_span *span, fz_rect *mediabox, fz_te
 			fz_debug_text_span_json(zoom, span->next, mediabox, prev_span);
 		} else {
 			printf("\n\t\t\t]\n");
-			printf("\t\t},\n"); 
+			printf("\t\t},\n");
 			fz_debug_text_span_json(zoom, span->next, mediabox, NULL);
 		}
 	} else if (prev_span) {
