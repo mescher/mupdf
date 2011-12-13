@@ -194,7 +194,7 @@ void drawpage(pdf_xref *xref, int pagenum)
 		printf("{\"page_number\": %d,\n",pagenum);
 		printf("\t\"paragraphs\":\n");
 		printf("\t[\n");
-		fz_debug_text_span_json(resolution / 72.0, text, &page->mediabox,NULL);
+		fz_debug_text_span_json(resolution / 72.0, text, &page->mediabox,NULL,0);
 		printf("\t]\n}");
 		fz_free_text_span(text);
 	}

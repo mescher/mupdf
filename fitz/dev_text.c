@@ -240,18 +240,18 @@ fz_debug_text_span_html(float zoom, fz_text_span *span, fz_rect *mediabox, fz_te
 		} else {
 			if (!is_word_open) {
 				is_word_open=1;
-                                // Get last char
-                                j=i;
-                                do{
-                                    j++;
-                                }while(span->text[j].c != 32 && j < span->len);
+                // Get last char
+                j=i;
+                do {
+                    j++;
+                } while (span->text[j].c != 32 && j < span->len);
 
 				printf("\t\t<span class=\"word\"  style=\"width:%dpx;height:%dpx;position:absolute; top:%dpx; left:%dpx; font-size:%gpx; background-color:555555; opacity:0.3; \">",
-                                        (int) ((span->text[j - 1].bbox.x1 - span->text[i].bbox.x0) * zoom),
-                                        (int) ((span->text[j - 1].bbox.y1 - span->text[i].bbox.y0) * zoom),
-                                        (int)((page_height-span->text[i].bbox.y0-span->size - span->size/5.0 )* zoom),
-					(int)(span->text[i].bbox.x0*zoom),
-					span->size*zoom);
+                (int) ((span->text[j - 1].bbox.x1 - span->text[i].bbox.x0) * zoom),
+                (int) ((span->text[j - 1].bbox.y1 - span->text[i].bbox.y0) * zoom),
+                (int)((page_height-span->text[i].bbox.y0-span->size - span->size/5.0 )* zoom),
+				(int)(span->text[i].bbox.x0*zoom),
+				span->size*zoom);
 			}
 			if (c < 128) {
 				putchar(c);
@@ -297,18 +297,14 @@ fz_debug_text_span_html(float zoom, fz_text_span *span, fz_rect *mediabox, fz_te
 }
 
 void
-fz_debug_text_span_json(float zoom, fz_text_span *span, fz_rect *mediabox, fz_text_span *prev_span)
+fz_debug_text_span_json(float zoom, fz_text_span *span, fz_rect *mediabox, fz_text_span *prev_span, int is_first_word)
 {
 	char buf[10];
 	int c, n, k, i, j;
 	int is_word_open=0; 
-	int is_first_word=0; 
-
 	int last_char=0;
 	
 	int page_height= (int)(mediabox->y1 - mediabox->y0);
-
-
 	
 	//if the first_parag is not defined, init with the current
 	if (!prev_span) {
@@ -319,12 +315,11 @@ fz_debug_text_span_json(float zoom, fz_text_span *span, fz_rect *mediabox, fz_te
 	}
 
 	//check if current first wo
-
 	for (i = 0; i < span->len; i++)
 	{
-                if((prev_span && prev_span->text[0].c == 32) && span->text[0].c == 32) {
-                    continue;
-                }
+        if((prev_span && prev_span->text[0].c == 32) && span->text[0].c == 32) {
+            continue;
+        }
 		c = span->text[i].c;
 		if (c == 32) {
 			if (is_word_open) {
@@ -338,10 +333,11 @@ fz_debug_text_span_json(float zoom, fz_text_span *span, fz_rect *mediabox, fz_te
 					printf(",\n");
 				}
 				is_first_word=0;
-                                j=i;
-                                do{
-                                    j++;
-                                }while(span->text[j].c != 32 && j < span->len);
+                j=i;
+                do{
+                    j++;
+                }while(span->text[j].c != 32 && j < span->len);
+
 				printf("\t\t\t\t{\"w\": %d, \"h\": %d, \"top\": %d, \"left\": %d, \"size\": %g, \"font\": \"%s\", \"word\":\"",
 					(int) ((span->text[j - 1].bbox.x1 - span->text[i].bbox.x0) * zoom),
                                         (int) ((span->text[j - 1].bbox.y1 - span->text[i].bbox.y0) * zoom),
@@ -372,8 +368,7 @@ fz_debug_text_span_json(float zoom, fz_text_span *span, fz_rect *mediabox, fz_te
 		}
 	}
         
-        
-	if (span->next && (prev_span && prev_span->text[0].c != 32 && span->next->text[0].c != 32)) {
+	if (span->next) {
 		//check for end of paragraph
 		float maxSize = MAX(span->size, span->next->size);
 		int dx0 = ABS(span->next->text[0].bbox.x0 - prev_span->text[0].bbox.x0);
@@ -387,18 +382,30 @@ fz_debug_text_span_json(float zoom, fz_text_span *span, fz_rect *mediabox, fz_te
 		int is_same_font = span->font == span->next->font;
 		int is_same_size = span->size == span->next->size;
 		int is_no_termination_char = last_char!=33 && last_char!=46;
+		int is_only_space = is_span_only_spaces(span);
 
-		if (is_same_line || (is_same_start && is_next_line  && is_no_termination_char)) {
-			fz_debug_text_span_json(zoom, span->next, mediabox, prev_span);
+		if (is_same_line || is_only_space || (is_same_start && is_next_line  && is_no_termination_char)) {
+			fz_debug_text_span_json(zoom, span->next, mediabox, prev_span,is_first_word);
 		} else {
 			printf("\n\t\t\t]\n");
 			printf("\t\t},\n");
-			fz_debug_text_span_json(zoom, span->next, mediabox, NULL);
+			fz_debug_text_span_json(zoom, span->next, mediabox, NULL,0);
 		}
 	} else if (prev_span) {
 		printf("\n\t\t\t]\n");
 		printf("\t\t}\n"); 
 	}
+}
+
+int is_span_only_spaces(fz_text_span *span)
+{
+	int i;
+	for (i=0; i<span->len;i++) {
+		if (span->text[i].c != 32) {
+			return (0);
+		}
+	}
+	return (1);
 }
 
 
