@@ -1050,8 +1050,8 @@ void fz_free_text_span(fz_text_span *line);
 void fz_debug_text_span(fz_text_span *line);
 void fz_debug_text_span_xml(fz_text_span *span, int merge);
 void fz_debug_text_span_html(float zoom, fz_text_span *span, fz_rect *mediabox,  fz_text_span *prev_span);
-void fz_debug_text_span_json(float zoom, fz_text_span *span, fz_rect *mediabox, fz_text_span *prev_span);
-
+void fz_debug_text_span_json(float zoom, fz_text_span *span, fz_rect *mediabox, fz_text_span *prev_span, int is_first_world);
+int is_span_only_spaces(fz_text_span *span);
 fz_device *fz_new_text_device(fz_text_span *text);
 
 /*
