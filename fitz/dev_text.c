@@ -388,7 +388,7 @@ fz_debug_text_span_json(float zoom, fz_text_span *span, fz_rect *mediabox, fz_te
 		int is_same_size = span->size == span->next->size;
 		int is_no_termination_char = last_char!=33 && last_char!=46;
 
-		if (is_same_line || (is_same_start && is_next_line  && is_same_font && is_same_size && is_no_termination_char)) {
+		if (is_same_line || (is_same_start && is_next_line  && is_no_termination_char)) {
 			fz_debug_text_span_json(zoom, span->next, mediabox, prev_span);
 		} else {
 			printf("\n\t\t\t]\n");
