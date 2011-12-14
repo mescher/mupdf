@@ -375,7 +375,7 @@ fz_debug_text_span_json(float zoom, fz_text_span *span, fz_rect *mediabox, fz_te
 		int dx1 = ABS(span->next->text[0].bbox.x0 - span->text[span->len-1].bbox.x1);
 		int dy = ABS(span->next->text[0].bbox.y0 - span->text[0].bbox.y0);
 		
-		int is_same_line = (dy<0.3*maxSize && dx1<0.3*maxSize);
+		int is_same_line = (dy<0.5*maxSize && dx1<0.3*maxSize);
 		int is_same_start = dx0<0.5*span->size;
 		int is_next_line = dy<maxSize*2;
 
@@ -384,7 +384,7 @@ fz_debug_text_span_json(float zoom, fz_text_span *span, fz_rect *mediabox, fz_te
 		int is_no_termination_char = last_char!=33 && last_char!=46;
 		int is_only_space = is_span_only_spaces(span);
 
-		if (is_same_line || is_only_space || (is_same_start && is_next_line  && is_no_termination_char)) {
+		if (is_same_line || is_only_space || (is_same_font && is_same_start && is_next_line  && is_no_termination_char)) {
 			fz_debug_text_span_json(zoom, span->next, mediabox, prev_span,is_first_word);
 		} else {
 			printf("\n\t\t\t]\n");
