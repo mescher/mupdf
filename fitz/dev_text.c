@@ -381,10 +381,25 @@ fz_debug_text_span_json(float zoom, fz_text_span *span, fz_rect *mediabox, fz_te
 
 		int is_same_font = span->font == span->next->font;
 		int is_same_size = span->size == span->next->size;
-		int is_no_termination_char = last_char!=33 && last_char!=46;
+		int is_no_termination_char = last_char!=33 && last_char!=46; // && last_char!=63;
 		int is_only_space = is_span_only_spaces(span);
-
-		if (is_same_line || is_only_space || (is_same_font && is_same_start && is_next_line  && is_no_termination_char)) {
+                int is_return = is_first_word || (is_only_space && is_span_only_spaces(span->next));
+                /*
+                printf("\n+++++++++++++++++++++\n");
+                printf("Is Same Line: %d\n", is_same_line);
+                printf("Is Only Space & Is Return: %d\n", (is_only_space & is_return));
+                printf("---------------------\n");
+                printf("Is Same Font: %d\n", is_same_font);
+                printf("Is Same Start: %d\n", is_same_start);
+                printf("Is Next Line: %d\n", is_next_line);
+                printf("Is No Term Char: %d\n", is_no_termination_char);
+                printf("---------------------\n");
+                printf("Current Font: %s \n", span->font->name);
+                printf("Next Font: %s \n", span->next->font->name);
+                printf("Last Char: %d\n", last_char);
+                printf("+++---------------+++\n");
+                */
+		if (is_same_line || (is_only_space & is_return) || (last_char != 0 && is_same_font && is_same_start && is_next_line && is_no_termination_char)) {
 			fz_debug_text_span_json(zoom, span->next, mediabox, prev_span,is_first_word);
 		} else {
 			printf("\n\t\t\t]\n");

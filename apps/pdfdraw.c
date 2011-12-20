@@ -319,7 +319,6 @@ static void drawrange(pdf_xref *xref, char *range)
 {
 	int page, spage, epage;
 	char *spec, *dash;
-	int absolute_top=0;
 
 	spec = fz_strsep(&range, ",");
 	while (spec)
