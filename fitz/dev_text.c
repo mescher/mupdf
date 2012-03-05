@@ -317,11 +317,12 @@ fz_debug_text_span_json(float zoom, fz_text_span *span, fz_rect *mediabox, fz_te
 	//check if current first wo
 	for (i = 0; i < span->len; i++)
 	{
-        if((prev_span && prev_span->text[0].c == 32) && span->text[0].c == 32) {
+        if ((prev_span && isSpacing(prev_span->text[0].c) ) && isSpacing(span->text[0].c)){
             continue;
         }
 		c = span->text[i].c;
-		if (c == 32) {
+		
+		if (isSpacing(c)) {
 			if (is_word_open) {
 				is_word_open=0;
 				printf("\"}");
@@ -336,7 +337,7 @@ fz_debug_text_span_json(float zoom, fz_text_span *span, fz_rect *mediabox, fz_te
                 j=i;
                 do{
                     j++;
-                }while(span->text[j].c != 32 && j < span->len);
+                }while(!isSpacing(span->text[j].c) && j < span->len);
 
 				printf("\t\t\t\t{\"w\": %d, \"h\": %d, \"top\": %d, \"left\": %d, \"size\": %g, \"font\": \"%s\", \"word\":\"",
 					(int) ((span->text[j - 1].bbox.x1 - span->text[i].bbox.x0) * zoom),
@@ -412,11 +413,17 @@ fz_debug_text_span_json(float zoom, fz_text_span *span, fz_rect *mediabox, fz_te
 	}
 }
 
+
+int isSpacing(int c) {
+	return (c==32 || c==160);
+}
+
+
 int is_span_only_spaces(fz_text_span *span)
 {
 	int i;
 	for (i=0; i<span->len;i++) {
-		if (span->text[i].c != 32) {
+		if (!isSpacing(span->text[i].c)) {
 			return (0);
 		}
 	}
