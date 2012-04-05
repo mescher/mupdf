@@ -382,7 +382,7 @@ fz_debug_text_span_json(float zoom, fz_text_span *span, fz_rect *mediabox, fz_te
 
 		int is_same_font = strcmp(span->font->name, span->next->font->name)==0;
 		int is_same_size = span->size == span->next->size;
-		int is_no_termination_char = last_char!=33 && last_char!=46; // && last_char!=63;
+		int is_no_termination_char = last_char!=33 && last_char!=46 && last_char!=41; // && last_char!=63;
 		int is_only_space = is_span_only_spaces(span);
         int is_return = is_first_word || (is_only_space && is_span_only_spaces(span->next));
    /*     
